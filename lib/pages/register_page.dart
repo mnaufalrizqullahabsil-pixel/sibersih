@@ -375,7 +375,7 @@ class _RegisterPageState extends State<RegisterPage>
 
   Widget _buildJurusanDropdown() {
     return DropdownButtonFormField<String>(
-      initialValue: _selectedJurusan,
+      value: _selectedJurusan,
       onChanged: (val) => setState(() => _selectedJurusan = val),
       decoration: InputDecoration(
         hintText: 'Pilih jurusan',

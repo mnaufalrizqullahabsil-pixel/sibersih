@@ -92,7 +92,7 @@ class _SibersihAppState extends State<SibersihApp> {
           elevation: 0,
           centerTitle: true,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -101,7 +101,7 @@ class _SibersihAppState extends State<SibersihApp> {
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: SibersihColors.primary.withValues(alpha: 0.06),
+          fillColor: SibersihColors.primary.withOpacity( 0.06),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
@@ -160,7 +160,7 @@ class _SibersihAppState extends State<SibersihApp> {
           elevation: 0,
           centerTitle: true,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -169,7 +169,7 @@ class _SibersihAppState extends State<SibersihApp> {
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.06),
+          fillColor: Colors.white.withOpacity(0.06),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
