@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../services/supabase_service.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -9,7 +10,7 @@ class LandingPage extends StatefulWidget {
 }
 
 class _LandingPageState extends State<LandingPage>
-  with TickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _entryController;
   late AnimationController _floatController;
   late AnimationController _bgController;
@@ -19,6 +20,8 @@ class _LandingPageState extends State<LandingPage>
   late Animation<double> _subtitleEntry;
   late Animation<double> _buttonsEntry;
   late Animation<double> _floatAnim;
+
+  bool _googleLoading = false;
 
   @override
   void initState() {
@@ -73,6 +76,26 @@ class _LandingPageState extends State<LandingPage>
     _floatController.dispose();
     _bgController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _googleLoading = true);
+    final result = await SupabaseService.instance.loginWithGoogle();
+    if (!mounted) return;
+    setState(() => _googleLoading = false);
+
+    if (!result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Login Google gagal'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+    // Jika sukses: browser redirect ke Google → balik ke app → 
+    // onAuthStateChange di main.dart yang handle navigasi ke /home
   }
 
   @override
@@ -221,8 +244,7 @@ class _LandingPageState extends State<LandingPage>
                               width: double.infinity,
                               height: 56,
                               child: ElevatedButton(
-                                onPressed: () =>
-                                    Navigator.pushNamed(context, '/login'),
+                                onPressed: () => Navigator.pushNamed(context, '/login'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
                                   foregroundColor: const Color(0xFF1007BA),
@@ -248,12 +270,10 @@ class _LandingPageState extends State<LandingPage>
                               width: double.infinity,
                               height: 56,
                               child: OutlinedButton(
-                                onPressed: () =>
-                                    Navigator.pushNamed(context, '/register'),
+                                onPressed: () => Navigator.pushNamed(context, '/register'),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: Colors.white,
-                                  side: const BorderSide(
-                                      color: Colors.white54, width: 1.5),
+                                  side: const BorderSide(color: Colors.white54, width: 1.5),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
@@ -272,28 +292,23 @@ class _LandingPageState extends State<LandingPage>
                             // Divider
                             const Row(
                               children: [
-                                Expanded(
-                                    child: Divider(
-                                        color: Colors.white24, height: 1)),
+                                Expanded(child: Divider(color: Colors.white24, height: 1)),
                                 Padding(
                                   padding: EdgeInsets.symmetric(horizontal: 14),
                                   child: Text('atau',
-                                      style: TextStyle(
-                                          color: Colors.white38, fontSize: 13)),
+                                      style: TextStyle(color: Colors.white38, fontSize: 13)),
                                 ),
-                                Expanded(
-                                    child: Divider(
-                                        color: Colors.white24, height: 1)),
+                                Expanded(child: Divider(color: Colors.white24, height: 1)),
                               ],
                             ),
                             const SizedBox(height: 20),
-                            // Google login
+                            // Google login — now wired to real auth
                             SizedBox(
                               width: double.infinity,
                               height: 56,
                               child: _GoogleButton(
-                                onPressed: () =>
-                                    Navigator.pushNamed(context, '/home'),
+                                loading: _googleLoading,
+                                onPressed: _googleLoading ? null : _handleGoogleLogin,
                               ),
                             ),
                           ],
@@ -332,9 +347,7 @@ class _LandingPageState extends State<LandingPage>
           ),
         ],
       ),
-      child: const Center(
-        child: Text('🌿', style: TextStyle(fontSize: 48)),
-      ),
+      child: const Center(child: Text('🌿', style: TextStyle(fontSize: 48))),
     );
   }
 
@@ -346,17 +359,16 @@ class _LandingPageState extends State<LandingPage>
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white24),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.white70, fontSize: 12),
-      ),
+      child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 12)),
     );
   }
 }
 
 class _GoogleButton extends StatefulWidget {
-  final VoidCallback onPressed;
-  const _GoogleButton({required this.onPressed});
+  final VoidCallback? onPressed;
+  final bool loading;
+
+  const _GoogleButton({required this.onPressed, this.loading = false});
 
   @override
   State<_GoogleButton> createState() => _GoogleButtonState();
@@ -382,37 +394,45 @@ class _GoogleButtonState extends State<_GoogleButton> {
         child: TextButton(
           onPressed: widget.onPressed,
           style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Text('G',
+          child: widget.loading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Text('G',
+                            style: TextStyle(
+                                color: Color(0xFF4285F4),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Lanjutkan dengan Google',
                       style: TextStyle(
-                          color: Color(0xFF4285F4),
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14)),
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Lanjutkan dengan Google',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
         ),
       ),
     );

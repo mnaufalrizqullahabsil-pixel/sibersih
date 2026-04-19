@@ -13,7 +13,8 @@ dependencies:
   cupertino_icons: ^1.0.6
   image_picker: ^1.1.0
   supabase_flutter: ^1.9.0
-  onnxruntime: ^1.1.0
+  http: ^1.0.0
+  http_parser: ^4.0.0
   image: ^4.1.7           # untuk preprocessing gambar di mobile  
 
 dev_dependencies:
@@ -23,7 +24,6 @@ dev_dependencies:
 
 flutter:
   assets:
-    - assets/models/
   uses-material-design: true
   # Uncomment to use a custom font (download Nunito from Google Fonts)
   fonts:

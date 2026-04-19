@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,13 +8,28 @@ import 'pages/landing_page.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
 import 'pages/main_page.dart';
+import 'services/supabase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: 'https://vkfiwanhdbukapkexcif.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZml3YW5oZGJ1a2Fwa2V4Y2lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNjk2MzgsImV4cCI6MjA5MTc0NTYzOH0.nNDbbdyDADBzNq795xbtVEmw2lbsAYgKJG-jf14Z0g0',
+    authCallbackUrlHostname: kIsWeb ? null : 'login-callback',
+    authFlowType: kIsWeb ? AuthFlowType.implicit : AuthFlowType.pkce,
   );
+
+  final uri = Uri.base;
+  if (uri.queryParameters.containsKey('access_token') ||
+      uri.queryParameters.containsKey('code') ||
+      uri.queryParameters.containsKey('session') ||
+      uri.queryParameters.containsKey('error')) {
+    try {
+      await Supabase.instance.client.auth.getSessionFromUrl(uri);
+    } catch (_) {
+      // Ignore no-code callback when there is no auth session.
+    }
+  }
   runApp(const SibersihApp());
 }
 
@@ -26,12 +42,43 @@ class SibersihApp extends StatefulWidget {
 
 class _SibersihAppState extends State<SibersihApp> {
   bool _isDarkMode = false;
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ── Listener auth state ──────────────────────────────────
+    // Menangkap event setelah Google OAuth redirect kembali ke app.
+    // Ketika Supabase detect sesi baru (signedIn), kita:
+    //   1. Pastikan record user ada di tabel users (buat kalau baru)
+    //   2. Navigate ke /home
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      final event = data.event;
+      if (event == AuthChangeEvent.signedIn) {
+        // Buat user record di Supabase jika belum ada (Google user baru)
+        await SupabaseService.instance.ensureUserRecord();
+
+        // Navigate ke home, replace semua route sebelumnya
+        _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/home',
+          (route) => false,
+        );
+      } else if (event == AuthChangeEvent.signedOut) {
+        _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/landing',
+          (route) => false,
+        );
+      }
+    });
+  }
 
   void toggleTheme(bool val) => setState(() => _isDarkMode = val);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'Sibersih',
       debugShowCheckedModeBanner: false,
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
@@ -44,8 +91,7 @@ class _SibersihAppState extends State<SibersihApp> {
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
-            statusBarIconBrightness:
-                isDark ? Brightness.light : Brightness.dark,
+            statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
             statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
             systemNavigationBarColor: theme.scaffoldBackgroundColor,
             systemNavigationBarIconBrightness:
@@ -94,14 +140,12 @@ class _SibersihAppState extends State<SibersihApp> {
         ),
         cardTheme: CardTheme(
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           color: Colors.white,
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: SibersihColors.primary.withOpacity( 0.06),
+          fillColor: SibersihColors.primary.withOpacity(0.06),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
@@ -110,29 +154,22 @@ class _SibersihAppState extends State<SibersihApp> {
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: SibersihColors.primary, width: 1.5),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             elevation: 4,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
         ),
         switchTheme: SwitchThemeData(
           thumbColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return Colors.white;
-            }
+            if (states.contains(WidgetState.selected)) return Colors.white;
             return Colors.grey.shade400;
           }),
           trackColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return SibersihColors.primary;
-            }
+            if (states.contains(WidgetState.selected)) return SibersihColors.primary;
             return Colors.grey.shade300;
           }),
         ),
@@ -162,9 +199,7 @@ class _SibersihAppState extends State<SibersihApp> {
         ),
         cardTheme: CardTheme(
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           color: SibersihColors.cardDark,
         ),
         inputDecorationTheme: InputDecorationTheme(
@@ -176,32 +211,24 @@ class _SibersihAppState extends State<SibersihApp> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide:
-                const BorderSide(color: Color(0xFF7B6FFF), width: 1.5),
+            borderSide: const BorderSide(color: Color(0xFF7B6FFF), width: 1.5),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             elevation: 4,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
         ),
         switchTheme: SwitchThemeData(
           thumbColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return Colors.white;
-            }
+            if (states.contains(WidgetState.selected)) return Colors.white;
             return Colors.grey.shade600;
           }),
           trackColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return const Color(0xFF4C3FE8);
-            }
+            if (states.contains(WidgetState.selected)) return const Color(0xFF4C3FE8);
             return Colors.grey.shade800;
           }),
         ),
