@@ -23,7 +23,7 @@ dev_dependencies:
 
 flutter:
   assets:
-    - assets/models/botol.onnx
+    - assets/models/
   uses-material-design: true
   # Uncomment to use a custom font (download Nunito from Google Fonts)
   fonts:
