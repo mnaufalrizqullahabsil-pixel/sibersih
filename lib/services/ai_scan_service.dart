@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 enum BottleType { plasticBottle, glassBottle, unknown }
 
@@ -70,6 +71,7 @@ class AiScanService {
         'file',
         bytes,
         filename: sourceName ?? 'image.jpg',
+        contentType: MediaType('image', 'jpeg'), // ← tambah ini
       ));
 
       final streamed  = await request.send().timeout(const Duration(seconds: 30));
@@ -81,7 +83,7 @@ class AiScanService {
       final plastic = (map['plastic'] as num?)?.toDouble() ?? 0.0;
       final glass   = (map['glass']   as num?)?.toDouble() ?? 0.0;
 
-      const threshold = 0.5;
+      const threshold = 0.25;
       if (plastic >= glass && plastic >= threshold) return AiScanResult.plasticBottle(plastic);
       if (glass > plastic  && glass   >= threshold) return AiScanResult.glassBottle(glass);
       return AiScanResult.noBottleFound();
