@@ -85,8 +85,6 @@ class _LaporanSampahPageState extends State<LaporanSampahPage>
     try {
       final file = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 85,
-        maxWidth: 1920,
       );
       if (file == null || !mounted) return;
       final bytes = await file.readAsBytes();
@@ -103,13 +101,13 @@ class _LaporanSampahPageState extends State<LaporanSampahPage>
     if (_picking) return;
     setState(() => _picking = true);
     try {
-      final files = await _picker.pickMultiImage(imageQuality: 85, maxWidth: 1920);
+      final files = await _picker.pickMultiImage();
       for (final f in files) {
         final bytes = await f.readAsBytes();
         if (bytes.isNotEmpty) await _addPhotoAndScan(bytes, f.name);
       }
       if (files.isEmpty) {
-        final one = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+        final one = await _picker.pickImage(source: ImageSource.gallery);
         if (one != null) {
           final bytes = await one.readAsBytes();
           if (bytes.isNotEmpty) await _addPhotoAndScan(bytes, one.name);
