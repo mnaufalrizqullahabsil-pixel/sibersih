@@ -43,7 +43,7 @@ OrtSession? _session;
 Future<void> _initModel() async {
   if (_session != null) return;
   OrtEnv.instance.init();
-  final raw   = await rootBundle.load('assets/models/botol.onnx');
+  final raw   = await rootBundle.load('assets/assets/models/botol.onnx');
   final bytes = raw.buffer.asUint8List();
   _session = OrtSession.fromBuffer(
     bytes,
