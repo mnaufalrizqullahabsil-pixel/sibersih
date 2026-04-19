@@ -10,7 +10,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     aaptOptions {
-        noCompress "onnx"
+        noCompress += "onnx"
     }
 
     compileOptions {
