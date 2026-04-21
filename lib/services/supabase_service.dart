@@ -105,7 +105,17 @@ class SupabaseService {
     required String password,
   }) async {
     try {
-      final authResult = await _supabase.auth.signUp(email: email.trim(), password: password);
+      final authResult = await _supabase.auth.signUp(
+        email: email.trim(), 
+        password: password,
+        data: {                         // ← TAMBAHKAN INI
+        'display_name': nama,
+        'full_name': nama,
+        'nim': nim,
+        'jurusan': jurusan,
+      },
+      );
+
       final user = authResult.user;
       if (user == null) return AuthResult.error('Registrasi gagal');
 
